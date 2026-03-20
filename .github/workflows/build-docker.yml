@@ -35,10 +35,10 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Extract version from package.json
+      - name: Extract version from upstream package.json
         id: pkg
         run: |
-          VERSION=$(jq -r '.version' package.json)
+          VERSION=$(curl -fsSL "https://raw.githubusercontent.com/hjdhnx/drpy-node/refs/heads/main/package.json" | jq -r '.version')
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Extract metadata (tags, labels)
@@ -59,3 +59,12 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Update Docker Hub description
+        uses: peter-evans/dockerhub-description@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          repository: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}
+          readme-filepath: ./安装说明.md
+          short-description: ${{ github.event.repository.description }}
