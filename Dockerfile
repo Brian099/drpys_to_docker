@@ -15,7 +15,7 @@ WORKDIR /app
 
 # 克隆GitHub仓库到工作目录
 ARG DRPY_NODE_REF=main
-RUN git clone --depth 1 --branch "${DRPY_NODE_REF}" https://github.com/hjdhnx/drpy-node.git .
+RUN git clone --depth 1 --branch "${DRPY_NODE_REF}" https://github.com/hjdhnx/drpy-node.git . && rm -rf .git .github
 
 # 安装项目依赖项和puppeteer
 RUN rm -f package-lock.json && yarn && yarn add puppeteer
