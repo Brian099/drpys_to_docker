@@ -4,6 +4,7 @@ FROM node:20-alpine AS builder
 
 RUN apk add --no-cache git python3 build-base linux-headers
 ENV PYTHON=/usr/bin/python3
+ENV NODE_OPTIONS=--jitless
 ENV PUPPETEER_SKIP_DOWNLOAD=true
 
 # 如果您需要配置git以使用特定的HTTP版本，请确保这是出于必要和安全考虑
