@@ -2,8 +2,9 @@
 # 使用node:20-alpine(17 < version < 23)作为基础镜像
 FROM node:20-alpine AS builder
 
-# 安装git
-RUN apk add --no-cache git
+RUN apk add --no-cache git python3 build-base linux-headers
+ENV PYTHON=/usr/bin/python3
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 
 # 如果您需要配置git以使用特定的HTTP版本，请确保这是出于必要和安全考虑
 RUN git config --global http.version HTTP/1.1
@@ -15,7 +16,7 @@ WORKDIR /app
 RUN git clone https://github.com/hjdhnx/drpy-node.git .
 
 # 安装项目依赖项和puppeteer
-RUN yarn && yarn add puppeteer
+RUN rm -f package-lock.json && yarn && yarn add puppeteer
 
 # 复制工作目录中的所有文件到一个临时目录中
 # 以便在运行器阶段中使用
@@ -26,7 +27,9 @@ RUN mkdir -p /tmp/drpys && \
 # 运行器阶段
 # 使用alpine:latest作为基础镜像来创建一个更小的镜像
 # 但是无法用pm2
-FROM alpine:latest AS runner
+FROM node:20-alpine AS runner
+ENV PUPPETEER_SKIP_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
 # 创建一个工作目录
 WORKDIR /app
@@ -38,10 +41,8 @@ RUN cp /app/.env.development /app/.env && \
     sed -i 's|^VIRTUAL_ENV[[:space:]]*=[[:space:]]*$|VIRTUAL_ENV=/app/.venv|' /app/.env && \
     echo '{"ali_token":"","ali_refresh_token":"","quark_cookie":"","uc_cookie":"","bili_cookie":"","thread":"10","enable_dr2":"1","enable_py":"2"}' > /app/config/env.json
 
-# 安装Node.js运行时（如果需要的话，这里已经假设在构建器阶段中安装了所有必要的Node.js依赖项）
-# 由于我们已经将node_modules目录复制到了运行器阶段，因此这里不需要再次安装npm或node_modules中的依赖项
-# 但是，我们仍然需要安装Node.js运行时本身（除非drpys项目是一个纯静态资源服务，不需要Node.js运行时）
-RUN apk add --no-cache nodejs
+RUN apk add --no-cache chromium nss freetype harfbuzz ca-certificates ttf-freefont && \
+    if [ ! -e /usr/bin/chromium-browser ] && [ -e /usr/bin/chromium ]; then ln -s /usr/bin/chromium /usr/bin/chromium-browser; fi
 
 # 安装php8.3及其扩展
 RUN apk add --no-cache \
